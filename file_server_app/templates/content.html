@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block directories %}
+    <h1>Directories in
+
+    {% for dots_part in dots_parts %}
+    <a href=./{{dots_part.dots}}>{{dots_part.part}}/</a>
+    {% endfor %}
+    </h1>
+    <ul>
+    {% for directory in directories %}
+        <li><a href=./{{directory|urlencode}}/>{{directory}}</a></li>
+    {% endfor %}
+    </ul>
+{% endblock %}
+
+
+{% block files %}
+    <h1>Files in
+    {% for dots_part in dots_parts %}
+    <a href=./{{dots_part.dots}}>{{dots_part.part}}/</a>
+    {% endfor %}
+    </h1>
+    <ul>
+    {% for file in files %}
+        <li><a href=./{{file.name|urlencode}}>{{file.name}} - ({{file.size|floatformat:4}} MB)</a></li>
+    {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block upload %}
+    <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+        <input type="file" name="myfile">
+        <button type="submit">Upload</button>
+    </form>
+{% endblock %}

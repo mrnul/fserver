@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block error %}
+    <h3>An error occurred!</h3>
+    <p>path:{{error.path}}</p>
+    <p>message:{{error.details}}</p>
+{% endblock %}

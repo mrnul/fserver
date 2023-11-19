@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block directories %}
+    <h1>Drives</h1>
+    {% for letter in letters %}
+    <ul>
+        <li><a href=./{{letter|urlencode}}:/>{{letter}}:/</a></li>
+    </ul>
+    {% endfor %}
+{% endblock %}
