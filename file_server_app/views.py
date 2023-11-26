@@ -1,26 +1,34 @@
 import os
-from http import HTTPStatus
 
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import redirect
+from django.views import generic
 
 from file_server_app import utils
+from fserver import settings
 
 
 # Create your views here.
-def drives(request: HttpRequest):
-    return render(request, 'drives.html', context={'letters': utils.get_all_drive_letters()})
+class ContentList(generic.ListView):
+    template_name = 'content.html'
 
+    def get(self, request, *args, **kwargs):
+        path = self.kwargs.get('path', '')
+        if os.path.isfile(path):
+            return utils.build_file_response(path)
+        return super().get(request, args, kwargs)
 
-def content(request: HttpRequest, path: str):
-    if request.method == 'POST' and 'myfile' in request.FILES and request.FILES['myfile']:
-        my_file = request.FILES['myfile']
-        fs = FileSystemStorage()
-        filename = fs.save(os.path.join(request.path, my_file.name), my_file)
+    def post(self, request, *args, **kwargs):
+        path = kwargs.get('path', '')
+        for file in request.FILES.getlist('files'):
+            fs = FileSystemStorage()
+            filename = fs.save(file.name, file)
+            os.replace(os.path.join(settings.MEDIA_URL, filename),
+                       os.path.join(path, filename))
+        return redirect('./')
 
-    if os.path.isdir(path):
-        return utils.build_dir_response(request, path)
-    elif os.path.isfile(path):
-        return utils.build_file_response(request, path)
-    return utils.build_error_response(request, path, 'Content not found', HTTPStatus.NOT_FOUND)
+    def get_queryset(self):
+        path = self.kwargs.get('path', '')
+        if os.path.isdir(path):
+            return utils.get_directories_files_in_path(path)
+        return {'drives': utils.get_all_drive_letters()}

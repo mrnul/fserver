@@ -1,10 +1,7 @@
 import mimetypes
 import os
-import socket
-from http import HTTPStatus
 
-from django.http import HttpRequest, StreamingHttpResponse
-from django.shortcuts import render
+from django.http import StreamingHttpResponse, HttpResponse
 
 from fserver import settings
 
@@ -15,30 +12,29 @@ def get_all_drive_letters() -> list[str]:
     return drives
 
 
-def get_directories_files_in_path(path: str):
-    directories = []
-    files = []
-    for item in os.listdir(path):
-        path_to_check = os.path.join(path, item)
-        if os.path.isfile(path_to_check):
-            files.append({'name': item, 'size': os.path.getsize(path_to_check) / (1024.0 ** 2)})
-        elif os.path.isdir(path_to_check):
-            directories.append(item)
-    return directories, files
-
-
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.settimeout(0)
+def get_directories_files_in_path(path: str) -> dict:
     try:
-        # doesn't even have to be reachable
-        s.connect(('10.254.254.254', 1))
-        ip = s.getsockname()[0]
-    except (Exception,):
-        ip = '127.0.0.1'
-    finally:
-        s.close()
-    return ip
+        directories = []
+        files = []
+        for item in os.listdir(path):
+            path_to_check = os.path.join(path, item)
+            if os.path.isfile(path_to_check):
+                files.append({'name': item, 'size': os.path.getsize(path_to_check) / (1024.0 ** 2)})
+            elif os.path.isdir(path_to_check):
+                directories.append(item)
+        return {
+            'directories': directories,
+            'files': files,
+            'dots_parts': build_dots_parts(path),
+            'drives': get_all_drive_letters()
+        }
+    except OSError as e:
+        return {
+            'error': {
+                'path': path,
+                'details': str(e)
+            }
+        }
 
 
 def build_dots_parts(path: str):
@@ -53,19 +49,6 @@ def build_dots_parts(path: str):
     return list(reversed(dots_parts))
 
 
-def build_dir_response(request: HttpRequest, path: str):
-    try:
-        dirs, files = get_directories_files_in_path(path)
-        return render(request, 'content.html',
-                      context={
-                          'directories': dirs,
-                          'files': files,
-                          'dots_parts': build_dots_parts(path)
-                      })
-    except OSError as e:
-        return build_error_response(request, path, str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
 def browser_should_handle_it(content_type):
     if content_type is None:
         return False
@@ -75,7 +58,7 @@ def browser_should_handle_it(content_type):
     return False
 
 
-def build_file_response(request: HttpRequest, path: str):
+def build_file_response(path: str):
     try:
         content_type = mimetypes.MimeTypes().guess_type(path, False)[0]
         response = StreamingHttpResponse(open(path, 'rb'), content_type=content_type)
@@ -84,14 +67,4 @@ def build_file_response(request: HttpRequest, path: str):
         #     response['Content-Disposition'] = f'attachment; filename="{os.path.basename(path)}"'
         return response
     except OSError as e:
-        return build_error_response(request, path, str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
-def build_error_response(request: HttpRequest, path: str, details: str, error_code: int):
-    return render(request, 'error.html',
-                  context={
-                      'error': {
-                          'path': path,
-                          'details': details
-                      }
-                  }, status=error_code)
+        return HttpResponse(f'Error while trying to access {path}: {e}')

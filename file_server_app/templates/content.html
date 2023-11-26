@@ -1,37 +1,52 @@
 {% extends "base.html" %}
 
-{% block directories %}
-    <h1>Directories in
-
-    {% for dots_part in dots_parts %}
-    <a href=./{{dots_part.dots}}>{{dots_part.part}}/</a>
+{% block drives %}
+<h2>Drives ({{ object_list.drives|length }})</h2>
+<ul>
+    {% for drive in object_list.drives %}
+    <li><a href=http://localhost/{{drive|urlencode}}:/>{{drive}}:/</a></li>
     {% endfor %}
-    </h1>
-    <ul>
-    {% for directory in directories %}
-        <li><a href=./{{directory|urlencode}}/>{{directory}}</a></li>
-    {% endfor %}
-    </ul>
+</ul>
 {% endblock %}
 
-
-{% block files %}
-    <h1>Files in
-    {% for dots_part in dots_parts %}
+{% block current_path %}
+{% if object_list.dots_parts|length > 0 %}
+<h1>Content in
+    {% for dots_part in object_list.dots_parts %}
     <a href=./{{dots_part.dots}}>{{dots_part.part}}/</a>
     {% endfor %}
-    </h1>
-    <ul>
-    {% for file in files %}
-        <li><a href=./{{file.name|urlencode}}>{{file.name}} - ({{file.size|floatformat:4}} MB)</a></li>
-    {% endfor %}
-    </ul>
-{% endblock %}
+</h1>
 
-{% block upload %}
-    <form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-        <input type="file" name="myfile">
-        <button type="submit">Upload</button>
-    </form>
+    <input type="file" name="files" multiple>
+    <button type="submit">Upload</button>
+</form>
+
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if object_list.directories|length > 0 or object_list.files|length > 0 %}
+<h2>Directories ({{ object_list.directories|length }})</h2>
+<ul>
+    {% for directory in object_list.directories %}
+    <li><a href=./{{directory|urlencode}}/>{{directory}}</a></li>
+    {% endfor %}
+</ul>
+<h2>Files ({{ object_list.files|length }})</h2>
+<ul>
+    {% for file in object_list.files %}
+    <li><a href=./{{file.name|urlencode}}>{{file.name}} - ({{file.size|floatformat:4}} MB)</a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}
+
+{% block error %}
+{% if "error" in object_list %}
+<h1>An error occured...</h1>
+<p>{{ object_list.error.path }}</p>
+<p>{{ object_list.error.details }}</p>
+{% endif %}
 {% endblock %}
