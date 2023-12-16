@@ -15,7 +15,7 @@ class ContentList(generic.ListView):
     template_name = 'content.html'
 
     def get(self, request, *args, **kwargs):
-        path = self.kwargs.get('path', '')
+        path = kwargs.get('path', '')
         if os.path.isfile(path):
             return utils.build_file_response(path)
         return super().get(request, args, kwargs)
@@ -25,8 +25,17 @@ class ContentList(generic.ListView):
         for file in request.FILES.getlist('files'):
             fs = FileSystemStorage()
             filename = fs.save(file.name, file)
-            shutil.move(os.path.join(settings.MEDIA_URL, filename),
-                        os.path.join(path, filename))
+            source: str = str(os.path.join(settings.MEDIA_URL, filename))
+            destination: str = str(os.path.join(path, filename))
+            try:
+                shutil.move(source, destination)
+            except Exception as e:
+                return {
+                    'error': {
+                        'path': f'{source} -> {destination}',
+                        'details': e
+                    }
+                }
         return redirect('./')
 
     def get_queryset(self):

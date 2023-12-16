@@ -3,6 +3,8 @@
 import os
 import sys
 
+from file_server_app import utils
+
 
 def main():
     """Run administrative tasks."""
@@ -15,7 +17,7 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    execute_from_command_line(sys.argv)
+    execute_from_command_line(['manage.py', 'runserver', f'{utils.get_ip()}:80'])
 
 
 if __name__ == '__main__':
