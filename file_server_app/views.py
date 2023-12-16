@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect
@@ -10,6 +11,7 @@ from fserver import settings
 
 # Create your views here.
 class ContentList(generic.ListView):
+    local_ip = utils.get_ip()
     template_name = 'content.html'
 
     def get(self, request, *args, **kwargs):
@@ -23,12 +25,17 @@ class ContentList(generic.ListView):
         for file in request.FILES.getlist('files'):
             fs = FileSystemStorage()
             filename = fs.save(file.name, file)
-            os.replace(os.path.join(settings.MEDIA_URL, filename),
-                       os.path.join(path, filename))
+            shutil.move(os.path.join(settings.MEDIA_URL, filename),
+                        os.path.join(path, filename))
         return redirect('./')
 
     def get_queryset(self):
         path = self.kwargs.get('path', '')
         if os.path.isdir(path):
-            return utils.get_directories_files_in_path(path)
-        return {'drives': utils.get_all_drive_letters()}
+            qs = utils.get_directories_files_in_path(path)
+        else:
+            qs = {
+                'drives': utils.get_all_drive_letters(),
+            }
+        qs |= {'local_ip': self.local_ip}
+        return qs

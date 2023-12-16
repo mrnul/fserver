@@ -4,7 +4,7 @@
 <h2>Drives ({{ object_list.drives|length }})</h2>
 <ul>
     {% for drive in object_list.drives %}
-    <li><a href=http://localhost/{{drive|urlencode}}:/>{{drive}}:/</a></li>
+    <li><a href={{local_ip}}/{{drive|urlencode}}:/>{{drive}}:/</a></li>
     {% endfor %}
 </ul>
 {% endblock %}

@@ -1,5 +1,6 @@
 import mimetypes
 import os
+import socket
 
 from django.http import StreamingHttpResponse, HttpResponse
 
@@ -68,3 +69,17 @@ def build_file_response(path: str):
         return response
     except OSError as e:
         return HttpResponse(f'Error while trying to access {path}: {e}')
+
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('255.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except (Exception,):
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
